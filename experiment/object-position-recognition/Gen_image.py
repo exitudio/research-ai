@@ -43,7 +43,7 @@ class Gen_image:
 
 
 gen_image = Gen_image((128, 128))
-circle_locations_train = gen_image.circles(64, "data/circles_train")
+circle_locations_train = gen_image.circles(512, "data/circles_train")
 save_csv(circle_locations_train, './data/circles_train/locations.csv')
 
 circle_locations_test = gen_image.circles(64, "data/circles_test")
