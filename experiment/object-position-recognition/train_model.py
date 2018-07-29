@@ -79,6 +79,7 @@ def create_model(size, alpha):
     x = _depthwise_conv_block(model_net.layers[-1].output, 1024, alpha, 1, block_id=14)
     x = MaxPooling2D(pool_size=(3, 3))(x)
     x = Conv2D(4, kernel_size=(1, 1), padding="same")(x)
+    print(x)
     x = Reshape((4,))(x)
 
     return Model(inputs=model_net.input, outputs=x)
