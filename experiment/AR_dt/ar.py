@@ -21,7 +21,7 @@ def create_mobile_net_model(size, alpha):
   x = Reshape((8,))(x)
   return Model(inputs=model_net.input, outputs=x)
 model = create_mobile_net_model(IMAGE_SIZE, ALPHA)
-model.load_weights('model-0.94.h5')
+model.load_weights('model-0.92.h5')
 
 cap = cv2.VideoCapture(0)
 while(1):
