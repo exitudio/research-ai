@@ -1,4 +1,4 @@
-# EXIT DOC
+# EXIT DOC [fork from (here)[https://github.com/experiencor/keras-yolo3]]
  1. download data [here](https://github.com/datitran/raccoon_dataset)
  2. download pretrain (h5) : [here](https://1drv.ms/u/s!ApLdDEW3ut5fgQXa7GzSlG-mdza6)
 
