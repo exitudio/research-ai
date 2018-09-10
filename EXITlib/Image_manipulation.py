@@ -47,7 +47,7 @@ def main():
   image_manipulation = Image_manipulation()
   image = cv2.imread('source-data/test.png')
   image, new_corners = image_manipulation.rotate_bound(image, 45)
-  print('rotated corners:', new_corners)
+  # print('rotated corners:', new_corners)
   cv2.imshow('image', image)
   cv2.waitKey(0)
   cv2.destroyAllWindows()
