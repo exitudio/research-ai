@@ -8,6 +8,8 @@ from keras.preprocessing.image import *
 from keras.utils import Sequence
 import numpy as np
 
+num = np.array([[1,2],[3,4]])
+print( np.multiply(num, 4) )
 
 ALPHA = 0.25
 IMAGE_SIZE = 224
@@ -21,28 +23,37 @@ def create_mobile_net_model(size, alpha):
   x = Reshape((8,))(x)
   return Model(inputs=model_net.input, outputs=x)
 model = create_mobile_net_model(IMAGE_SIZE, ALPHA)
-model.load_weights('model-0.92.h5')
+model.load_weights('model-0.93.h5')
 
 cap = cv2.VideoCapture(0)
 while(1):
 
-    # Take each frame
-    _, image = cap.read()
-    (w,h,_) = image.shape
+  ret, raw_frame = cap.read()
+  if not ret:
+      break
 
-    image = cv2.resize(image, (IMAGE_SIZE, IMAGE_SIZE))
-    points = model.predict(x=np.array([image]))[0].astype(int)
-    points = np.array([[points[0], points[1]], 
-                       [points[2], points[3]], 
-                       [points[6], points[7]], 
-                       [points[4], points[5]]])
-    cv2.polylines(image, [points], True, (255,255,255))
+  # crop
+  h = raw_frame.shape[0]
+  w = raw_frame.shape[1]
+  start_x = int((w - h) / 2)
+  display_frame = raw_frame[:, start_x: start_x+h]
+  # resize
+  predict_frame = cv2.resize(display_frame, (IMAGE_SIZE, IMAGE_SIZE))
 
-    image = cv2.resize(image, (h, w))
-    cv2.imshow('frame',image)
-    k = cv2.waitKey(5) & 0xFF
-    if k == 27:
-        break
+  points = model.predict(x=np.array([predict_frame]))[0].astype(int)
+  points = np.array([[points[0], points[1]], 
+                      [points[2], points[3]], 
+                      [points[6], points[7]], 
+                      [points[4], points[5]]])
+  scale = (720/IMAGE_SIZE)
+  points = np.multiply(points, scale).astype(int)
+
+  cv2.polylines(display_frame, [points], True, (255,255,255))
+  display_frame = cv2.flip( display_frame, 1 )
+  cv2.imshow('frame',display_frame)
+  k = cv2.waitKey(5) & 0xFF
+  if k == 27:
+      break
 
 cv2.destroyAllWindows()
 
