@@ -37,7 +37,7 @@ class Momentum(Optimizer):
         return Momentum(self._beta, shape)
 
 
-class RMS_prop(Optimizer):
+class RMSProp(Optimizer):
     def __init__(self, beta=0.999, shape=None):
         self._beta = beta
 
@@ -50,7 +50,7 @@ class RMS_prop(Optimizer):
         return d/ (np.sqrt(self._s)+EPSILON)
 
     def generate_optimizer(self, shape):
-        return RMS_prop(self._beta, shape)
+        return RMSProp(self._beta, shape)
 
 
 class Adam(Optimizer):

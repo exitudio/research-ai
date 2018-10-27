@@ -20,29 +20,27 @@ class Layer(ABC):
 class Dense(Layer):
     def __init__(self, num_output, Activation_function=None):
         self._num_output = num_output
-        self.activation_function = Activation_function(
+        self._activation_function = Activation_function(
         ) if Activation_function is not None else NoActivation()
 
-    def init_weights(self, num_input, optimizer):
+    def init_weights(self, num_input, optimizer, initializer):
         self._num_input = num_input
         # init weights
-        # np.full((num_input, self._num_output), 0.1) #
-        self._weights = np.random.randn(num_input, self._num_output)
-        # np.full((1, self._num_output), 0.1) #
-        self._bias = np.random.randn(1, self._num_output)
+        self._weights = initializer(num_input, self._num_output)
+        self._bias = initializer(1, self._num_output)
         # init optimizer
         self._optimizer_w = optimizer.generate_optimizer(self._weights.shape)
         self._optimizer_b = optimizer.generate_optimizer(self._bias.shape)
 
     def feed_forward(self, input):
         z = np.dot(input, self._weights) + self._bias
-        output = self.activation_function.feed_forward(z)
+        output = self._activation_function.feed_forward(z)
         self._input = input
         self._output = output
         return output
 
     def back_prop(self, last_derivative, learning_rate):
-        dz = last_derivative * self.activation_function.back_prop()
+        dz = last_derivative * self._activation_function.back_prop()
 
         # it should be mean, but I don't know why not dividing by total is better
         # np.dot(self._input.T, dz)/self._num_input
