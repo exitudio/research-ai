@@ -1,0 +1,9 @@
+dealertrack-machinlearning
+
+data/
+MNIST_data/
+raw/
+
+.pyc
+
+.ipynb_checkpoints
