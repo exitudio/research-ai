@@ -45,14 +45,21 @@ class Learner:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         # train callback
-        train_callback = MultipleCallbacks(
-            CosineAnnealingLR_Updater(optimizer,
-                                      len(self.data_loader_train) * cycle_len,
-                                      cycle_len,
-                                      cycle_mult),
-            FitTracker(),
-            LRTracker(optimizer)
-        )
+        if cycle_len is not 0:
+            train_callback = MultipleCallbacks(
+                CosineAnnealingLR_Updater(optimizer,
+                                          len(self.data_loader_train) *
+                                          cycle_len,
+                                          cycle_len,
+                                          cycle_mult),
+                FitTracker(),
+                LRTracker(optimizer)
+            )
+        else:
+            train_callback = MultipleCallbacks(
+                FitTracker(),
+                LRTracker(optimizer)
+            )
         # test callback
         test_callback = FitTracker()
 
