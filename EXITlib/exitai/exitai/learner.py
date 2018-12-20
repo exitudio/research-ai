@@ -2,6 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from typing import Callable
 from .callbacks import FitTracker, LRTracker, LRFinder, MultipleCallbacks, Callback, CosineAnnealingLR_Updater
+from .helpers import get_param_groups_with_lr, get_callbacks_by_tuple_string
 
 
 class Learner:
@@ -41,25 +42,27 @@ class Learner:
 
         callback.on_epoch_end(phase, len(data_loader.dataset))
 
-    def fit(self, lr: float=0.003, num_epochs: int=25, cycle_len: int=2, cycle_mult: int=2)->None:
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+    def fit(self, lr: float=0.003, num_epochs: int=25, cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, callbacks: any=None)->None:
+        model_params = get_param_groups_with_lr(self.model, lr)
+        optimizer = torch.optim.Adam(model_params)
 
         # train callback
-        if cycle_len is not 0:
+        if cycle is not None:
             train_callback = MultipleCallbacks(
                 CosineAnnealingLR_Updater(optimizer,
                                           len(self.data_loader_train) *
-                                          cycle_len,
-                                          cycle_len,
-                                          cycle_mult),
-                FitTracker(),
-                LRTracker(optimizer)
+                                          cycle['cycle_len'],
+                                          cycle['cycle_len'],
+                                          cycle['cycle_mult']),
+                FitTracker()
             )
         else:
-            train_callback = MultipleCallbacks(
-                FitTracker(),
-                LRTracker(optimizer)
-            )
+            train_callback = MultipleCallbacks(FitTracker())
+
+        if callbacks:
+            train_callback.append(
+                get_callbacks_by_tuple_string(callbacks, optimizer))
+
         # test callback
         test_callback = FitTracker()
 
@@ -73,9 +76,10 @@ class Learner:
         train_callback.on_train_end()
         test_callback.on_train_end()
 
-    def lr_find(self, start_lr: float=1e-7, end_lr: float=10, num_it: int=100)->None:
+    def lr_find(self, start_lr: float=1e-7, end_lr: float=10, num_it: int=100, num_batch: int=10)->None:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=start_lr)
-        lr_finder = LRFinder(start_lr, end_lr, num_it, optimizer)
+        lr_finder = LRFinder(start_lr, end_lr, num_it,
+                             optimizer, num_batch=num_batch)
         while True:
             self._run_model('train', optimizer, lr_finder)
             if lr_finder.is_done():

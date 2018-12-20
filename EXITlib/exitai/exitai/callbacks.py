@@ -39,6 +39,11 @@ class MultipleCallbacks(Callback):
                         getattr(cb, function_name)(*arg)
                 return new_function
             setattr(self, function_name, bind_function(function_name))
+    
+    def append(self, callbacks):
+        self.callbacks = list(self.callbacks)
+        for callback in callbacks:
+            self.callbacks.append(callback)
 
     def is_done(self)->bool:
         for cb in self.callbacks:
@@ -110,11 +115,12 @@ class LRTracker(Callback):
 
     def on_train_end(self):
         lrs = np.array(self.lrs)
-        plt.plot(lrs[:, 0])
+        for i in range(lrs.shape[1]):
+            plt.plot(lrs[:, i])
 
 
 class LRFinder(Callback):
-    def __init__(self, start_lr, end_lr, num_it, optimizer, num_batch=10):
+    def __init__(self, start_lr, end_lr, num_it, optimizer, num_batch):
         super().__init__()
         self.start_lr = start_lr
         self.end_lr = end_lr
