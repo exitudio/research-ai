@@ -1,7 +1,7 @@
 from torch.optim.optimizer import Optimizer
 import math
 from .const import LR_TRACKER
-from .callbacks import LRTracker
+import exitai.callbacks
 
 
 def set_lr(optimizer, lr)->None:
@@ -49,5 +49,5 @@ def get_callbacks_by_tuple_string(callbacks_string, optimizer):
     for callback_string in callbacks_string:
         print(callback_string, callback_string is LR_TRACKER)
         if callback_string is LR_TRACKER:
-            callbacks.append(LRTracker(optimizer))
+            callbacks.append(exitai.callbacks.LRTracker(optimizer)) # TODO findout how to avoid circular import
     return callbacks
