@@ -44,7 +44,8 @@ class Learner:
 
     def fit(self, lr: float=0.003, num_epochs: int=25, cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, callbacks: any=None)->None:
         model_params = get_param_groups_with_lr(self.model, lr)
-        optimizer = torch.optim.Adam(model_params)
+#         optimizer = torch.optim.Adam(model_params)
+        optimizer = torch.optim.SGD(model_params, momentum=0.9, weight_decay=5e-4)
 
         # train callback
         if cycle is not None:
