@@ -1,5 +1,5 @@
 from helpers import get_value_in_log_scale
-
+# to run test :$ pytest
 
 def test_first_func():
     # if index is divisible
