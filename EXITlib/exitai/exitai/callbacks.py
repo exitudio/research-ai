@@ -39,7 +39,7 @@ class MultipleCallbacks(Callback):
                         getattr(cb, function_name)(*arg)
                 return new_function
             setattr(self, function_name, bind_function(function_name))
-    
+
     def append(self, callbacks):
         self.callbacks = list(self.callbacks)
         for callback in callbacks:
@@ -50,29 +50,65 @@ class MultipleCallbacks(Callback):
             if cb.is_done():
                 return True
 
+def classification_eval_func(loss, output, target):
+    # ------ find correct ----------
+    # max of dimension 1, keepdim, and [0] is value / [1] is index (we need only index)
+    pred = output.max(1)[1]  # get the index of the max log-probability
+    correct = pred.eq(target).sum().item()
+    return correct
+    # ------------------------------
 
 class FitTracker(Callback):
-    def __init__(self):
+    def __init__(self, eval_func):
         super().__init__()
         self.total_loss = 0
         self.total_correct = 0
+        self.eval_func = eval_func
 
     def on_batch_end(self, loss, output, target):
-        # ------ find correct ----------
-        # max of dimension 1, keepdim, and [0] is value / [1] is index (we need only index)
-        pred = output.max(1)[1]  # get the index of the max log-probability
-        correct = pred.eq(target).sum().item()
-        # ------------------------------
         self.total_loss += loss.item()
-        self.total_correct += correct
+        self.total_correct += self.eval_func(loss, output, target)
 
     def on_epoch_end(self, phase, num_data):
+        print('num_data:', num_data)
         epoch_loss = self.total_loss / num_data*100
         epoch_acc = self.total_correct / num_data*100
         print('   [{}] Average loss: {:.4f}, acc: {:.2f}%'.format(
             phase, epoch_loss, epoch_acc))
         self.total_loss = 0
         self.total_correct = 0
+
+        self.epoch_loss = epoch_loss
+        self.epoch_acc = epoch_acc
+
+
+class FitTrackerWithSaveAndEarlyStopping(FitTracker):
+    def __init__(self, eval_func, model, patience=20):
+        super().__init__(eval_func)
+        self.model = model
+        self.patience = patience
+        self.wait = 0
+        self.best_loss = 1e15
+        self.is_stop = False
+        self.best_acc = 0
+
+    def on_epoch_end(self, phase, num_data):
+        super().on_epoch_end(phase, num_data)
+        # early stopping
+        if self.epoch_loss < self.best_loss:
+            self.best_loss = self.epoch_loss
+            self.wait = 1
+        else:
+            if self.wait >= self.patience:
+                self.is_stop = True
+            self.wait += 1
+
+        # save model
+        if self.epoch_acc > self.best_acc:
+            self.best_acc = self.epoch_acc
+            torch.save(self.model.state_dict(), f'data/acc_{self.epoch_acc}')
+
+    def is_done(self): return self.is_stop
 
 
 class CosineAnnealingLR_Updater(Callback):
