@@ -47,7 +47,6 @@ def get_callbacks_by_tuple_string(callbacks_string, optimizer):
         callbacks_string = [callbacks_string]
     callbacks = []
     for callback_string in callbacks_string:
-        print(callback_string, callback_string is LR_TRACKER)
         if callback_string is LR_TRACKER:
             callbacks.append(exitai.callbacks.LRTracker(optimizer)) # TODO findout how to avoid circular import
     return callbacks

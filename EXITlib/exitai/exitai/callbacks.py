@@ -70,7 +70,6 @@ class FitTracker(Callback):
         self.total_correct += self.eval_func(loss, output, target)
 
     def on_epoch_end(self, phase, num_data):
-        print('num_data:', num_data)
         epoch_loss = self.total_loss / num_data*100
         epoch_acc = self.total_correct / num_data*100
         print('   [{}] Average loss: {:.4f}, acc: {:.2f}%'.format(
