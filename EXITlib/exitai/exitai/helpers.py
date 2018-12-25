@@ -10,6 +10,10 @@ def set_lr(optimizer, lr)->None:
 
 
 def get_value_in_log_scale(vals, current_index, length):
+    # avoid divide by zero
+    if length == 1:
+        return vals[len(vals)-1]
+
     index_ratio = current_index/(length-1)
     min_index = math.floor(index_ratio/(len(vals)-1))
     max_index = math.ceil(index_ratio/(len(vals)-1))

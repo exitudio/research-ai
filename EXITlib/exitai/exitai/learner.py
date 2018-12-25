@@ -6,13 +6,14 @@ from .helpers import get_param_groups_with_lr, get_callbacks_by_tuple_string
 
 
 class Learner:
-    def __init__(self, data_loader_train, data_loader_test, model, criterion):
+    def __init__(self, data_loader_train, data_loader_test, model, criterion, input_to_model_mapper):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.data_loader_train = data_loader_train
         self.data_loader_test = data_loader_test
         self.model = model.to(self.device)
         self.criterion = criterion
+        self.input_to_model_mapper = input_to_model_mapper
 
     def _run_model(self, phase, optimizer, callback: Callable=Callback()):
 
@@ -27,24 +28,28 @@ class Learner:
         with torch.set_grad_enabled(phase == 'train'):
             for data in data_loader:
                 callback.on_batch_begin()
-                *input_data, target = (i.to(self.device) for i in data)
-                output = self.model(*input_data) 
+                input_data = tuple(i.to(self.device) for i in data)
 
-                loss = self.criterion(output, target)
+                input_model = self.input_to_model_mapper(*input_data)
+                if type(input_model) is tuple:
+                    output = self.model(*input_model)
+                else:
+                    output = self.model(input_model)
+
+                loss = self.criterion(input_data, output)
 
                 if phase == 'train':
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
 
-                # print('target:', target)
-                callback.on_batch_end(loss, output, target)
+                callback.on_batch_end(input_data, output, loss)
                 if callback.is_done():
                     break
 
         callback.on_epoch_end(phase, len(data_loader.dataset))
 
-    def fit(self, lr: float=0.003, num_epochs: int=25, cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, callbacks: any=None, eval_func=classification_eval_func)->None:
+    def fit(self, lr: float=0.003, num_epochs: int=25, cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, callbacks: any=None, eval_func=classification_eval_func, early_stop='acc')->None:
         model_params = get_param_groups_with_lr(self.model, lr)
         optimizer = torch.optim.Adam(model_params)
 #         optimizer = torch.optim.SGD(model_params, momentum=0.9, weight_decay=5e-4)
@@ -67,7 +72,8 @@ class Learner:
                 get_callbacks_by_tuple_string(callbacks, optimizer))
 
         # test callback
-        test_callback = FitTrackerWithSaveAndEarlyStopping(eval_func, self.model)
+        test_callback = FitTrackerWithSaveAndEarlyStopping(
+            eval_func, self.model, early_stop)
 
         # start fit
         train_callback.on_train_begin()
@@ -76,7 +82,8 @@ class Learner:
             print(f'---- epoch:{i} ------')
             self._run_model('train', optimizer, train_callback)
             self._run_model('test', optimizer, test_callback)
-            if test_callback.is_done(): break
+            if test_callback.is_done():
+                break
         train_callback.on_train_end()
         test_callback.on_train_end()
 

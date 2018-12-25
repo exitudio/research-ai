@@ -13,7 +13,7 @@ class Callback:
 
     def on_batch_begin(self): pass
 
-    def on_batch_end(self, loss, output, target): pass
+    def on_batch_end(self, input_data, output, loss): pass
 
     def on_epoch_end(self, phase, num_data): pass
 
@@ -50,7 +50,8 @@ class MultipleCallbacks(Callback):
             if cb.is_done():
                 return True
 
-def classification_eval_func(loss, output, target):
+def classification_eval_func(input_data, output, loss):
+    *_, target = input_data
     # ------ find correct ----------
     # max of dimension 1, keepdim, and [0] is value / [1] is index (we need only index)
     pred = output.max(1)[1]  # get the index of the max log-probability
@@ -65,14 +66,14 @@ class FitTracker(Callback):
         self.total_correct = 0
         self.eval_func = eval_func
 
-    def on_batch_end(self, loss, output, target):
+    def on_batch_end(self, input_data, output, loss):
         self.total_loss += loss.item()
-        self.total_correct += self.eval_func(loss, output, target)
+        self.total_correct += self.eval_func(input_data, output, loss)
 
     def on_epoch_end(self, phase, num_data):
         epoch_loss = self.total_loss / num_data*100
         epoch_acc = self.total_correct / num_data*100
-        print('   [{}] Average loss: {:.6f}, acc: {:.2f}%'.format(
+        print('   [{}] Average loss: {:.4f}, acc: {:.2f}%'.format(
             phase, epoch_loss, epoch_acc))
         self.total_loss = 0
         self.total_correct = 0
@@ -82,32 +83,50 @@ class FitTracker(Callback):
 
 
 class FitTrackerWithSaveAndEarlyStopping(FitTracker):
-    def __init__(self, eval_func, model, patience=20):
+    def __init__(self, eval_func, model, early_stop, patience=20):
         super().__init__(eval_func)
         self.model = model
+        self.early_stop = early_stop
         self.patience = patience
         self.wait = 0
         self.best_loss = 1e15
+        self.best_acc = -1e15
         self.is_stop = False
-        self.best_acc = 0
+
+    def save(self):
+        if self.early_stop == 'loss':
+            save_name = f'data/loss_{self.best_loss}'
+        elif self.early_stop == 'acc':
+            save_name = f'data/acc_{self.best_acc}'
+
+        torch.save(self.model.state_dict(), save_name)
 
     def on_epoch_end(self, phase, num_data):
         super().on_epoch_end(phase, num_data)
         # early stopping
-        if self.epoch_loss < self.best_loss:
+        if self.early_stop == 'loss' and self.epoch_loss < self.best_loss:
             self.best_loss = self.epoch_loss
             self.wait = 1
+            self.save() # save
+        if self.early_stop == 'acc' and self.best_acc < self.epoch_acc:
+            self.best_acc = self.epoch_acc
+            self.wait = 1
+            self.save() # save
         else:
             if self.wait >= self.patience:
                 self.is_stop = True
             self.wait += 1
-
-        # save model
-        if self.epoch_acc > self.best_acc:
-            self.best_acc = self.epoch_acc
-            torch.save(self.model.state_dict(), f'data/acc_{self.epoch_acc}')
+            
 
     def is_done(self): return self.is_stop
+
+    def on_train_end(self):
+        if self.early_stop == 'loss':
+            save_name = f'data/loss_{self.best_loss}'
+        elif self.early_stop == 'acc':
+            save_name = f'data/acc_{self.best_acc}'
+        checkpoint_state_dict = torch.load(save_name)
+        self.model.load_state_dict(checkpoint_state_dict)
 
 
 class CosineAnnealingLR_Updater(Callback):
@@ -178,7 +197,7 @@ class LRFinder(Callback):
         set_lr(self.optimizer, lr)
         return lr
 
-    def on_batch_end(self, loss, output, target):
+    def on_batch_end(self, input_data, output, loss):
         self.total_loss += loss.item()
         self.count += 1
         if self.count == self.num_batch:
