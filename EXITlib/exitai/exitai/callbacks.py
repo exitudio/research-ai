@@ -2,6 +2,7 @@ from .helpers import set_lr
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+import os
 
 
 class Callback:
@@ -93,22 +94,31 @@ class FitTrackerWithSaveAndEarlyStopping(FitTracker):
         self.best_acc = -1e15
         self.is_stop = False
 
-    def save(self):
+    def get_save_path(self):
         if self.early_stop == 'loss':
-            save_name = f'data/loss_{self.best_loss}'
+            path_save = f'data/loss_{self.best_loss}'
         elif self.early_stop == 'acc':
-            save_name = f'data/acc_{self.best_acc}'
+            path_save = f'data/acc_{self.best_acc}'
+        return path_save
 
-        torch.save(self.model.state_dict(), save_name)
+    def save(self):
+        torch.save(self.model.state_dict(), self.get_save_path())
+
+    def delete_old(self):
+        path_save = self.get_save_path()
+        if os.path.exists(path_save):
+            os.remove(path_save)
 
     def on_epoch_end(self, phase, num_data):
         super().on_epoch_end(phase, num_data)
         # early stopping
         if self.early_stop == 'loss' and self.epoch_loss < self.best_loss:
+            self.delete_old()
             self.best_loss = self.epoch_loss
             self.wait = 1
             self.save() # save
         if self.early_stop == 'acc' and self.best_acc < self.epoch_acc:
+            self.delete_old()
             self.best_acc = self.epoch_acc
             self.wait = 1
             self.save() # save
