@@ -14,7 +14,7 @@ class Callback:
 
     def on_batch_begin(self): pass
 
-    def on_batch_end(self, input_data, output, loss): pass
+    def on_batch_end(self, phase, input_data, output, loss): pass
 
     def on_epoch_end(self, phase, num_data): pass
 
@@ -67,7 +67,7 @@ class FitTracker(Callback):
         self.total_correct = 0
         self.eval_func = eval_func
 
-    def on_batch_end(self, input_data, output, loss):
+    def on_batch_end(self, phase, input_data, output, loss):
         self.total_loss += loss.item()
         self.total_correct += self.eval_func(input_data, output, loss)
 
@@ -135,8 +135,9 @@ class FitTrackerWithSaveAndEarlyStopping(FitTracker):
             save_name = f'data/loss_{self.best_loss}'
         elif self.early_stop == 'acc':
             save_name = f'data/acc_{self.best_acc}'
-        checkpoint_state_dict = torch.load(save_name)
-        self.model.load_state_dict(checkpoint_state_dict)
+        if os.path.exists(save_name):
+            checkpoint_state_dict = torch.load(save_name)
+            self.model.load_state_dict(checkpoint_state_dict)
 
 
 class CosineAnnealingLR_Updater(Callback):
@@ -207,7 +208,7 @@ class LRFinder(Callback):
         set_lr(self.optimizer, lr)
         return lr
 
-    def on_batch_end(self, input_data, output, loss):
+    def on_batch_end(self, phase, input_data, output, loss):
         self.total_loss += loss.item()
         self.count += 1
         if self.count == self.num_batch:

@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from typing import Callable
 from .callbacks import FitTracker, LRTracker, LRFinder, MultipleCallbacks, Callback, CosineAnnealingLR_Updater, FitTrackerWithSaveAndEarlyStopping, classification_eval_func
-from .helpers import get_param_groups_with_lr, get_callbacks_by_tuple_string
+from .helpers import get_param_groups_with_lr, get_callbacks_by_tuple
 
 
 class Learner:
@@ -37,7 +37,7 @@ class Learner:
                     loss.backward()
                     optimizer.step()
 
-                callback.on_batch_end(input_data, output, loss)
+                callback.on_batch_end(phase, input_data, output, loss)
                 if callback.is_done():
                     break
 
@@ -49,7 +49,8 @@ class Learner:
                   cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, 
                   callbacks: any=None, 
                   eval_func=classification_eval_func, 
-                  early_stop='acc')->None:
+                  early_stop='acc',
+                  is_run_test=True)->None:
         model_params = get_param_groups_with_lr(self.model, lr)
         optimizer = torch.optim.Adam(model_params)
 #         optimizer = torch.optim.SGD(model_params, momentum=0.9, weight_decay=5e-4)
@@ -69,7 +70,7 @@ class Learner:
 
         if callbacks:
             train_callback.append(
-                get_callbacks_by_tuple_string(callbacks, optimizer))
+                get_callbacks_by_tuple(callbacks, optimizer))
 
         # test callback
         test_callback = FitTrackerWithSaveAndEarlyStopping(
@@ -81,7 +82,7 @@ class Learner:
         for i in range(num_epochs):
             print(f'---- epoch:{i} ------')
             self._run_model('train', optimizer, model_loss_func, train_callback)
-            self._run_model('test', optimizer, model_loss_func, test_callback)
+            if is_run_test: self._run_model('test', optimizer, model_loss_func, test_callback)
             if test_callback.is_done():
                 break
         train_callback.on_train_end()

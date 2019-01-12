@@ -45,12 +45,14 @@ def get_param_groups_with_lr(model, lrs):
     return param_groups
 
 
-def get_callbacks_by_tuple_string(callbacks_string, optimizer):
+def get_callbacks_by_tuple(callbacks_input, optimizer):
     # TODO maybe there is a better structure, cause this needs optimzer to initiate LRTracker
-    if type(callbacks_string) is str:
-        callbacks_string = [callbacks_string]
+    if type(callbacks_input) is not list:
+        callbacks_input = [callbacks_input]
     callbacks = []
-    for callback_string in callbacks_string:
-        if callback_string is LR_TRACKER:
+    for callback in callbacks_input:
+        if callback is LR_TRACKER:
             callbacks.append(exitai.callbacks.LRTracker(optimizer)) # TODO findout how to avoid circular import
+        else:
+            callbacks.append(callback)
     return callbacks
