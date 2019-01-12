@@ -6,7 +6,7 @@ from .helpers import get_param_groups_with_lr, get_callbacks_by_tuple
 
 
 class Learner:
-    def __init__(self, data_loader_train, data_loader_test, model):
+    def __init__(self, model, data_loader_train, data_loader_test=None):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.data_loader_train = data_loader_train
@@ -49,8 +49,7 @@ class Learner:
                   cycle: dict = {'cycle_len': 2, 'cycle_mult': 2}, 
                   callbacks: any=None, 
                   eval_func=classification_eval_func, 
-                  early_stop='acc',
-                  is_run_test=True)->None:
+                  early_stop='acc')->None:
         model_params = get_param_groups_with_lr(self.model, lr)
         optimizer = torch.optim.Adam(model_params)
 #         optimizer = torch.optim.SGD(model_params, momentum=0.9, weight_decay=5e-4)
@@ -82,7 +81,7 @@ class Learner:
         for i in range(num_epochs):
             print(f'---- epoch:{i} ------')
             self._run_model('train', optimizer, model_loss_func, train_callback)
-            if is_run_test: self._run_model('test', optimizer, model_loss_func, test_callback)
+            if self.data_loader_test: self._run_model('test', optimizer, model_loss_func, test_callback)
             if test_callback.is_done():
                 break
         train_callback.on_train_end()
