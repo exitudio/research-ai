@@ -74,13 +74,13 @@ def main():
     optimizer = torch.optim.SGD(ct_loss.parameters(), lr=0.5)
     optimizer_test = torch.optim.SGD(ct_loss_test.parameters(), lr=0.5)
 
-    for i in range(30):
+    for i in range(2):
         out = ct_loss(target, vector_embedding)
         out_test = ct_loss_test(target, vector_embedding)
         out.backward()
         out_test.backward()
-        print('out:', out)
-        print('ct_loss_test:', out_test)
+        print('ct_loss:', ct_loss.centers.grad)
+        print('ct_loss_test:', ct_loss_test.centers.grad)
         optimizer.step()
         optimizer.zero_grad()
         optimizer_test.step()
