@@ -5,9 +5,9 @@ import numpy as np
 
 
 class TableBase(Base):
-    def __init__(self, env, num_episodes, epsilon, alpha, gamma, lambd=0):
+    def __init__(self, env, num_episodes, policy, epsilon, alpha, gamma, lambd=0):
         super().__init__(env, env.observation_space.n, env.action_space.n,
-                         num_episodes, epsilon, alpha, gamma, lambd)
+                         num_episodes, policy, epsilon, alpha, gamma, lambd)
         self.Q = torch.zeros(self.num_state, self.num_action)
 
     def epsilon_greedy(self, state) -> int:
