@@ -4,20 +4,8 @@ import random
 import numpy as np
 
 
-class ApproximationVBase(Base):
-    def __init__(self, env, num_state, num_action, num_episodes, policy, epsilon, alpha, gamma, lambd=0):
-        super().__init__(
-            env,
-            num_state,
-            num_action,
-            num_episodes,
-            policy,
-            epsilon,
-            alpha,
-            gamma,
-            lambd)
-
-    def initialize(self, model=None):
+class ApproxVBase(Base):
+    def initialize(self, model=None, learning_rate_name="alpha"):
         self.approx_v = {}
         if model == None:
             hidden = 64
@@ -30,22 +18,22 @@ class ApproximationVBase(Base):
             self.approx_v['model'] = model
         self.approx_v['loss_fn'] = torch.nn.MSELoss(reduction='sum')
         self.approx_v['optimizer'] = torch.optim.Adam(
-            self.approx_v['model'].parameters(), lr=self.alpha)
+            self.approx_v['model'].parameters(), lr=self.__dict__[learning_rate_name])
 
-    def approximate_q(self, state):
+    def get_q(self, state):
         state = torch.from_numpy(state).float()
         return self.approx_v['model'](state)
 
-    def update_weight(self, td_target, approx_q):
-        loss = self.approx_v['loss_fn'](td_target, approx_q)
+    def update_q(self, td_target, current_q):
+        loss = self.approx_v['loss_fn'](td_target, current_q)
         self.approx_v['optimizer'].zero_grad()
-        loss.backward()
+        loss.backward(retain_graph=True)
         self.approx_v['optimizer'].step()
 
     def epsilon_greedy(self, state) -> int:
         if random.random() > self.epsilon:
             # Not support multiple max a
-            qs = self.approximate_q(state)
+            qs = self.get_q(state)
             action = qs.argmax().item()
         else:
             action = random.randrange(0, self.num_action)

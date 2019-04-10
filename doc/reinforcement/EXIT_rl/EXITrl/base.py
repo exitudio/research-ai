@@ -1,18 +1,36 @@
 import torch
+from gym.spaces.box import Box
+from gym.spaces.discrete import Discrete
+from gridworld_env_2d_state import GridworldEnv2DState
 
 
 class Base():
-    def __init__(self, env, num_state, num_action, num_episodes, policy, epsilon, alpha, gamma, lambd):
+    def __init__(self, env, num_episodes, policy, gamma=.9, alpha=.5, beta=.5, lambd=0, epsilon=.1):
         self.env = env
         self.num_episodes = num_episodes
         self._policy = policy
         self.epsilon = epsilon
         self.alpha = alpha
+        self.beta = beta
         self.gamma = gamma
         self.lambd = lambd
 
-        self.num_state = num_state
-        self.num_action = num_action
+        if isinstance(env, GridworldEnv2DState):
+            """This is Ducttape"""
+            # stat_shape is using only in Discrete env
+            self.state_shape = [4, 4]
+            self.num_state = 2
+            self.num_action = self.env.action_space.n
+
+        elif isinstance(env.observation_space, Discrete):
+            self.state_shape = [env.observation_space.n]
+            self.num_state = 1
+            self.num_action = self.env.action_space.n
+
+        elif isinstance(env.observation_space, Box):
+            # TODO flatten shape in case of multiple dimensions
+            self.num_state = self.env.observation_space.shape[0]
+            self.num_action = self.env.action_space.n
 
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
