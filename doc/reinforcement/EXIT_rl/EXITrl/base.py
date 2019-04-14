@@ -2,6 +2,7 @@ import torch
 from gym.spaces.box import Box
 from gym.spaces.discrete import Discrete
 from gridworld_env_2d_state import GridworldEnv2DState
+import numpy as np
 
 
 class Base():
@@ -15,21 +16,24 @@ class Base():
         self.gamma = gamma
         self.lambd = lambd
 
+        # state
+        if isinstance(env.observation_space, Discrete):
+            self.state_shape = [env.observation_space.n]
+        elif isinstance(env.observation_space, Box):
+            self.num_state = self.env.observation_space.shape[0]
+
+        # action
+        if isinstance(env.action_space, Discrete):
+            self.num_action = self.env.action_space.n
+        elif isinstance(env.action_space, Box):
+            self.num_action = self.env.action_space.shape[0]
+
+        # Duct tape
         if isinstance(env, GridworldEnv2DState):
             """This is Ducttape"""
             # stat_shape is using only in Discrete env
             self.state_shape = [4, 4]
             self.num_state = 2
-            self.num_action = self.env.action_space.n
-
-        elif isinstance(env.observation_space, Discrete):
-            self.state_shape = [env.observation_space.n]
-            self.num_state = 1
-            self.num_action = self.env.action_space.n
-
-        elif isinstance(env.observation_space, Box):
-            # TODO flatten shape in case of multiple dimensions
-            self.num_state = self.env.observation_space.shape[0]
             self.num_action = self.env.action_space.n
 
         self.device = torch.device(
@@ -51,3 +55,10 @@ class Base():
         :return: action (int)
         """
         return getattr(self, self._policy)(state)
+
+    def convert_state_to_tensor(self, state):
+        if type(state) is np.ndarray:
+            state = torch.from_numpy(state).float()
+        else:
+            state = torch.FloatTensor([state])
+        return state

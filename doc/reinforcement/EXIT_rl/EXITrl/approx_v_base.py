@@ -30,6 +30,12 @@ class ApproxVBase(Base):
         loss.backward(retain_graph=True)
         self.approx_v['optimizer'].step()
 
+    def get_v(self, state):
+        return self.get_q(state)
+
+    def update_v(self, td_target, current_v):
+        self.update_q(td_target, current_v)
+
     def epsilon_greedy(self, state) -> int:
         if random.random() > self.epsilon:
             # Not support multiple max a
