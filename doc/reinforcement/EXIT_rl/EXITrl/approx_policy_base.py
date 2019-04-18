@@ -1,4 +1,5 @@
 from .base import Base
+from .helpers import convert_to_tensor
 import torch
 import random
 import numpy as np
@@ -27,7 +28,7 @@ class ApproxPolicyBase(Base):
         self.approx_policy['optimizer'].step()
 
     def softmax_policy(self, state):
-        state = self.convert_state_to_tensor(state)
+        state = convert_to_tensor(state)
         output = self.approx_policy['model'](state)
         probs = F.softmax(output, dim=0)
 
@@ -42,11 +43,11 @@ class ApproxPolicyBase(Base):
         return action.item(), log_prob
 
     def gaussian_policy(self, state):
-        state = self.convert_state_to_tensor(state)
+        state = convert_to_tensor(state)
         mu, sigma = self.approx_policy['model'](state)
         sigma = sigma+1e-8  # add small number to avoid 0
         m = torch.distributions.MultivariateNormal(
-            mu, torch.eye(self.num_action)*sigma)  # TODO this will not work with multiple actions
+            mu, torch.eye(self.num_action)*sigma)
         action = m.sample()
         action = torch.clamp(
             action,

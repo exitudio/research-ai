@@ -56,9 +56,3 @@ class Base():
         """
         return getattr(self, self._policy)(state)
 
-    def convert_state_to_tensor(self, state):
-        if type(state) is np.ndarray:
-            state = torch.from_numpy(state).float()
-        else:
-            state = torch.FloatTensor([state])
-        return state
