@@ -3,6 +3,7 @@ from gym.spaces.box import Box
 from gym.spaces.discrete import Discrete
 from gridworld_env_2d_state import GridworldEnv2DState
 import numpy as np
+from collections import deque
 
 
 class Base():
@@ -37,16 +38,26 @@ class Base():
             self.num_state = 2
             self.num_action = self.env.action_space.n
 
+        self.total_reward = []
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-    def train(self, is_logged=True):
-        total_reward = []
+    def log_average(self, num_mean_episode=10):
+        self.num_mean_episode = num_mean_episode
+        self.mean_reward = deque(maxlen=self.num_mean_episode)
+
+    def train(self):
         for episode in range(self.num_episodes):
             reward = self._loop(episode)
-            total_reward.append(reward)
-            if is_logged:
-                print('episode:', episode, 'reward:', reward)
+            self.total_reward.append(reward)
+            if self.num_mean_episode:
+                self.mean_reward.append(reward)
+                print('\rEpisode {}\tAverage Score: {:.2f}'.format(
+                    episode+1, np.mean(self.mean_reward)), end="")
+                if episode % self.num_mean_episode == self.num_mean_episode-1:
+                    print('\rEpisode {}\tAverage Score: {:.2f}'.format(
+                        episode+1, np.mean(self.mean_reward)))
+
 
     def _loop(self, episode) -> int: return 0
 
@@ -56,4 +67,3 @@ class Base():
         :return: action (int)
         """
         return getattr(self, self._policy)(state)
-
