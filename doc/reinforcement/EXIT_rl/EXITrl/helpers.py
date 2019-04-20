@@ -3,6 +3,7 @@ import random
 import torch
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def print_weight_size(model):
     for name, param in model.named_parameters():
@@ -23,9 +24,9 @@ def update_params(from_model, to_model, tau):
 
 def convert_to_tensor(input):
     if type(input) is np.ndarray:
-        input = torch.from_numpy(input).float()
+        input = torch.from_numpy(input).float().to(device)
     else:
-        input = torch.FloatTensor([input])
+        input = torch.FloatTensor([input]).to(device)
     return input
 
 
@@ -37,14 +38,14 @@ class ExperienceReplay:
     def remember(self, *args):
         if len(self.memories) == 0:
             for i in range(len(args)):
-                self.memories.append(torch.Tensor([args[i]]))
+                self.memories.append(torch.tensor([args[i]], dtype=torch.float, device=device))
         else:
             for i in range(len(args)):
                 self.memories[i] = torch.cat(
-                    (self.memories[i], torch.Tensor([args[i]])), dim=0)
+                    (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
 
     def recall(self, batch_size):
-        size = batch_size if batch_size < len(
-            self.memories) else len(self.memories[0])
-        query = random.sample(range(len(self.memories[0])), size)
+        memory_length = len(self.memories[0])
+        size = batch_size if batch_size < memory_length else memory_length
+        query = random.sample(range(memory_length), size)
         return list([self.memories[i][query] for i in range(len(self.memories))])
