@@ -6,7 +6,7 @@ import numpy as np
 
 
 class Base():
-    def __init__(self, env, num_episodes, policy, gamma=.9, alpha=.5, beta=.5, lambd=0, epsilon=.1):
+    def __init__(self, env, num_episodes, policy="", gamma=.9, alpha=.5, beta=.5, lambd=0, epsilon=.1, tau=1e-3):
         self.env = env
         self.num_episodes = num_episodes
         self._policy = policy
@@ -15,6 +15,7 @@ class Base():
         self.beta = beta
         self.gamma = gamma
         self.lambd = lambd
+        self.tau = tau
 
         # state
         if isinstance(env.observation_space, Discrete):
@@ -39,7 +40,7 @@ class Base():
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-    def train(self, is_logged=False):
+    def train(self, is_logged=True):
         total_reward = []
         for episode in range(self.num_episodes):
             reward = self._loop(episode)

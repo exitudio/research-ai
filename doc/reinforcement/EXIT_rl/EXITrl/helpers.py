@@ -11,8 +11,14 @@ def print_weight_size(model):
 
 
 def copy_params(from_model, to_model):
-    for target_param, param in zip(to_model.parameters(), from_model.parameters()):
-        target_param.data.copy_(param.data)
+    for from_param, to_param in zip(from_model.parameters(), to_model.parameters()):
+        to_param.data.copy_(from_param.data)
+
+
+def update_params(from_model, to_model, tau):
+    for from_param, to_param in zip(from_model.parameters(), to_model.parameters()):
+        update_data = tau*from_param.data + (1-tau) * to_param.data
+        to_param.data.copy_(update_data)
 
 
 def convert_to_tensor(input):
