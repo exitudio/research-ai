@@ -29,10 +29,21 @@ def convert_to_tensor(input):
         input = torch.FloatTensor([input]).to(device)
     return input
 
+class WeightDecay:
+    def __init__(self, start, end, decay):
+        self.val = start
+        self.end = end
+        self.decay = decay
+     
+    def step(self):
+        self.val = max(self.end, self.decay*self.val)
+        return self.val
+
 
 class ExperienceReplay:
-    def __init__(self, num_experience=128):
+    def __init__(self, num_experience=128, num_recall=64):
         self.num_experience = num_experience
+        self.num_recall= num_recall
         self.memories = []
 
     def remember(self, *args):
@@ -44,8 +55,8 @@ class ExperienceReplay:
                 self.memories[i] = torch.cat(
                     (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
 
-    def recall(self, batch_size):
+    def recall(self):
         memory_length = len(self.memories[0])
-        size = batch_size if batch_size < memory_length else memory_length
+        size = self.num_recall if self.num_recall < memory_length else memory_length
         query = random.sample(range(memory_length), size)
         return list([self.memories[i][query] for i in range(len(self.memories))])
