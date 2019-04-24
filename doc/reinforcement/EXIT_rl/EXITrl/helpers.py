@@ -51,9 +51,15 @@ class ExperienceReplay:
             for i in range(len(args)):
                 self.memories.append(torch.tensor([args[i]], dtype=torch.float, device=device))
         else:
+            # push
             for i in range(len(args)):
                 self.memories[i] = torch.cat(
                     (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
+            # pop
+            if len(self.memories[0]) > self.num_experience:
+                for i in range(len(args)):
+                    self.memories[i] = self.memories[i][1:]
+
 
     def recall(self):
         memory_length = len(self.memories[0])
