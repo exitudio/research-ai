@@ -76,17 +76,17 @@ class Base():
     
     def play(self, num_episode=3):
         self._load()
-        for i in range(num_episode):
+        for episode in range(num_episode):
             state = self.env.reset()
-            for j in range(1000):
+            total_reward = 0
+            for _ in range(1000):
                 action = self.policy(state)
                 self.env.render()
                 state, reward, done, _ = self.env.step(action)
-                if done: break 
+                total_reward += reward
+                if done: break
+            print('\rEpisode {}\tAverage Score: {:.2f}'.format(
+                episode+1, total_reward))
 
     def policy(self, state) -> int:
-        """
-        epsilon greedy method
-        :return: action (int)
-        """
         return getattr(self, self._policy)(state)
