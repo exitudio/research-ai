@@ -47,6 +47,8 @@ class Base():
         self.total_reward = []
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
+        
+        self.additional_log = {}
 
     def train(self, is_logged=True, early_stop=None):
         for episode in range(self.num_episodes):
@@ -56,11 +58,11 @@ class Base():
                 self.mean_reward.append(reward)
                 current_mean_reward = np.mean(self.mean_reward)
                 if is_logged:
-                    print('\rEpisode {}\tAverage Score: {:.2f}'.format(
-                        episode+1, current_mean_reward), end="")
+                    print('\rEpisode {}\tAverage Score: {:.2f} \tother{}'.format(
+                        episode+1, current_mean_reward, self.additional_log), end="")
                     if episode % self.num_mean_episode == self.num_mean_episode-1:
-                        print('\rEpisode {}\tAverage Score: {:.2f}'.format(
-                            episode+1, current_mean_reward))
+                        print('\rEpisode {}\tAverage Score: {:.2f} \tother{}'.format(
+                            episode+1, current_mean_reward, self.additional_log))
                 if current_mean_reward > self.best_reward:
                     self._save(reward)
                     
