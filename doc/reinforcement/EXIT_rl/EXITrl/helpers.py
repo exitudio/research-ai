@@ -45,20 +45,23 @@ class ExperienceReplay:
         self.num_experience = num_experience
         self.num_recall= num_recall
         self.memories = []
+        self.position = 0
 
     def remember(self, *args):
         if len(self.memories) == 0:
+            # init
             for i in range(len(args)):
                 self.memories.append(torch.tensor([args[i]], dtype=torch.float, device=device))
         else:
-            # push
-            for i in range(len(args)):
-                self.memories[i] = torch.cat(
-                    (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
-            # pop
-            if len(self.memories[0]) > self.num_experience:
+            if len(self.memories[0]) < self.num_experience:
+                # push
                 for i in range(len(args)):
-                    self.memories[i] = self.memories[i][1:]
+                    self.memories[i] = torch.cat(
+                        (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
+            else: # set
+                for i in range(len(args)):
+                    self.memories[i][self.position] = torch.tensor([args[i]], dtype=torch.float, device=device)
+        self.position = (self.position + 1) % self.num_experience
 
 
     def recall(self):
