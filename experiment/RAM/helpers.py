@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def append(a, b, dim=0):
     b = b.unsqueeze(dim)
