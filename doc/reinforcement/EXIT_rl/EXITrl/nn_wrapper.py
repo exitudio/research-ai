@@ -11,7 +11,6 @@ class NNWrapper:
 
     def forward(self, *input):
         input = tuple(i.to(device) for i in input)
-        print('input:', input[0].shape)
         output = self.model(*input)
         return output
 
