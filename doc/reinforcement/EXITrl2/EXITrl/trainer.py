@@ -2,17 +2,16 @@ import torch
 import numpy as np
 from collections import deque
 import matplotlib.pyplot as plt
+from .helpers import MeanBuffer
 
 
 class Trainer():
-    def __init__(self, env, num_episodes, num_mean_episode=10, save_name="checkpoint.pth"):
+    def __init__(self, env, num_episodes, save_name="checkpoint.pth"):
         self.env = env
         self.num_episodes = num_episodes
-        self.num_mean_episode = num_mean_episode
         self.save_name = save_name
 
         # init variables
-        self.mean_reward = deque(maxlen=self.num_mean_episode)
         self.best_reward = -1e8
         self.total_reward = []
         self.additional_log = {}
@@ -22,27 +21,26 @@ class Trainer():
     def _loop(self, episode) -> int: return 0
     def _policy(self, state): return 0
 
-    def train(self, is_logged=True, early_stop=None):
+    def train(self, is_logged=True, early_stop=None, num_mean=10):
+        mean_rewards = MeanBuffer(num_mean)
         for episode in range(self.num_episodes):
             reward = self._loop(episode)
             self.total_reward.append(reward)
-            if self.num_mean_episode:
-                self.mean_reward.append(reward)
-                current_mean_reward = np.mean(self.mean_reward)
-                if is_logged:
-                    print('\rEpisode {}\tAverage Score: {:.2f} \tother{}'.format(
-                        episode+1, current_mean_reward, self.additional_log), end="")
-                    if episode % self.num_mean_episode == self.num_mean_episode-1:
-                        print('\rEpisode {}\tAverage Score: {:.2f} \tother{}'.format(
-                            episode+1, current_mean_reward, self.additional_log))
-                if current_mean_reward > self.best_reward:
-                    self._save(reward)
+            mean_rewards.add(reward)
+            if is_logged:
+                print('\rEpisode {}\tLast reward: {:.2f}\tAverage reward: {:.2f} \tother{}'.format(
+                    episode+1, reward, mean_rewards.mean(), self.additional_log), end="")
+                if episode % num_mean == num_mean-1:
+                    print('\rEpisode {}\tLast reward: {:.2f}\tAverage reward: {:.2f} \tother{}                    '.format(
+                        episode+1, reward, mean_rewards.mean(), self.additional_log))
+            if mean_rewards.mean() > self.best_reward:
+                self._save(reward)
 
-                if early_stop and early_stop(current_mean_reward):
-                    print('\r--- early stop ----')
-                    print(' current_mean_reward:',
-                          current_mean_reward, 'episode:', episode)
-                    return
+            if early_stop and early_stop(mean_rewards.mean()):
+                print('\r--- early stop ----                                                                            ')
+                print('\rEpisode {}\tLast reward: {:.2f}\tAverage reward: {:.2f} \tother{}                    '.format(
+                        episode+1, reward, mean_rewards.mean(), self.additional_log))
+                return
 
     def play(self, num_episode=3):
         self._load()
