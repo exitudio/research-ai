@@ -64,3 +64,8 @@ class Trainer():
         plt.ylabel('Score')
         plt.xlabel('Episode #')
         plt.show()
+
+    def seed(self, seed):
+        self.env.seed(seed)
+        torch.manual_seed(seed)
+        np.random.seed(seed)
