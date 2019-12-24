@@ -89,7 +89,7 @@ class WeightDecay:
 class ExperienceReplay:
     def __init__(self, num_experience=128, num_recall=64):
         self.num_experience = int(num_experience)
-        self.num_recall = num_recall
+        self.num_recall = int(num_recall)
         self.memories = []
         self.position = 0
         self.num_current_experience = 0
