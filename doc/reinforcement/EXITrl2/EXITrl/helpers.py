@@ -56,8 +56,10 @@ def get_state_action_shape_from_env(env):
 
     return state_shape, action_shape
 
+
 class MeanBuffer:
     """ Use to calculate mean rewards"""
+
     def __init__(self, capacity):
         self.capacity = capacity
         self.deque = deque(maxlen=capacity)
@@ -86,6 +88,35 @@ class WeightDecay:
         return self.val
 
 
+class ExperienceReplay2:
+    def __init__(self, num_experience=128, num_recall=64):
+        self.num_experience = int(num_experience)
+        self.num_recall = int(num_recall)
+        self.memories = None
+        self.position = 0
+        self.num_current_experience = 0
+
+    def remember(self, *transition):
+        if self.num_current_experience == 0:
+            self.memories = list(np.array([i]) for i in transition)
+        elif self.num_current_experience < self.num_experience:
+            for i, _ in enumerate(self.memories):
+                self.memories[i] = np.concatenate( (self.memories[i], [transition[i]]) )
+        else:
+            self.memories[i] = transition[i]
+
+        self.position = (self.position + 1) % self.num_experience
+        if (self.num_current_experience < self.num_experience):
+            self.num_current_experience += 1
+
+    def recall(self):
+        # in the case that data is still not full yet.
+        num_sample = self.num_current_experience if self.num_recall > self.num_current_experience else self.num_recall
+        indexes = random.sample(range(self.num_current_experience), num_sample)
+        # torch.tensor(i.astype(float), dtype=torch.float, device=device)
+        return list( torch.tensor( i[indexes].astype(float), dtype=torch.float, device=device) for i in self.memories)
+
+
 class ExperienceReplay:
     def __init__(self, num_experience=128, num_recall=64):
         self.num_experience = int(num_experience)
@@ -107,7 +138,7 @@ class ExperienceReplay:
                 self.memories[i] = torch.cat(
                     (self.memories[i], torch.tensor([args[i]], dtype=torch.float, device=device)), dim=0)
             self.num_current_experience += 1
-        else:  
+        else:
             # full experience. replace the existing ones
             for i in range(len(args)):
                 self.memories[i][self.position] = torch.tensor(
