@@ -89,21 +89,28 @@ class WeightDecay:
 
 
 class ExperienceReplay2:
+    # save as np array but return as tensor
     def __init__(self, num_experience=128, num_recall=64):
         self.num_experience = int(num_experience)
         self.num_recall = int(num_recall)
-        self.memories = None
+        self.memories = []
         self.position = 0
         self.num_current_experience = 0
 
     def remember(self, *transition):
         if self.num_current_experience == 0:
-            self.memories = list(np.array([i]) for i in transition)
-        elif self.num_current_experience < self.num_experience:
-            for i, _ in enumerate(self.memories):
-                self.memories[i] = np.concatenate( (self.memories[i], [transition[i]]) )
-        else:
-            self.memories[i] = transition[i]
+            for i, var in enumerate(transition):
+                isListOrTuble = isinstance(var, (list, tuple, np.ndarray))
+                if isListOrTuble:
+                    shape = list(
+                        num_shape for num_shape in np.array(var).shape)
+                    shape.insert(0, self.num_experience)
+                else:
+                    shape = self.num_experience
+                # generate empty np array supporting deep list
+                self.memories.append(np.empty(shape))
+        for i, _ in enumerate(self.memories):
+            self.memories[i][self.position] = np.array(transition[i])
 
         self.position = (self.position + 1) % self.num_experience
         if (self.num_current_experience < self.num_experience):
@@ -113,8 +120,7 @@ class ExperienceReplay2:
         # in the case that data is still not full yet.
         num_sample = self.num_current_experience if self.num_recall > self.num_current_experience else self.num_recall
         indexes = random.sample(range(self.num_current_experience), num_sample)
-        # torch.tensor(i.astype(float), dtype=torch.float, device=device)
-        return list( torch.tensor( i[indexes].astype(float), dtype=torch.float, device=device) for i in self.memories)
+        return tuple(torch.tensor(i[indexes].astype(float), dtype=torch.float, device=device) for i in self.memories)
 
 
 class ExperienceReplay:
